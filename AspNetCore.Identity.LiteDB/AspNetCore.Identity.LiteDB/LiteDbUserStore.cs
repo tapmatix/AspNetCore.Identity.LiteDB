@@ -16,7 +16,9 @@ namespace AspNetCore.Identity.LiteDB
 {
    [SuppressMessage("ReSharper", "UnusedMember.Global")]
    [SuppressMessage("ReSharper", "RedundantExtendsListEntry")]
-   public class LiteDbUserStore<TUser> : IUserStore<TUser>,
+   public class LiteDbUserStore<TUser> : 
+      IUserStore<TUser>,
+      IQueryableUserStore<TUser>,
       IUserRoleStore<TUser>,
       IUserLoginStore<TUser>,
       IUserPasswordStore<TUser>,
@@ -343,10 +345,12 @@ namespace AspNetCore.Identity.LiteDB
 
          if (claim == null) throw new ArgumentNullException(nameof(claim));
 
-         var query = _users.Find(l => l.Claims.Any(c => c.Type == claim.Type && c.Value == claim.Value));
+         //var query = _users.Find(l => l.Claims.Any(c => c.Type == claim.Type && c.Value == claim.Value));
+         var query = _users.FindAll();
+         var result = query.ToList().Where(u => u.Claims.Any(c => c.Type == claim.Type && c.Value == claim.Value));
 
-
-         return Task.FromResult(query.ToList() as IList<TUser>);
+         //return Task.FromResult(query.ToList() as IList<TUser>);
+         return Task.FromResult(result.ToList() as IList<TUser>);
       }
 
       #endregion
@@ -498,9 +502,9 @@ namespace AspNetCore.Identity.LiteDB
 
          if (user == null) throw new ArgumentNullException(nameof(user));
 
-         if (user.Email == null)
-            throw new InvalidOperationException(
-               "Cannot get the confirmation status of the e-mail since the user doesn't have an e-mail.");
+         //if (user.Email == null)
+         //   throw new InvalidOperationException(
+         //      "Cannot get the confirmation status of the e-mail since the user doesn't have an e-mail.");
 
          return Task.FromResult(user.Email?.Address);
       }
@@ -806,5 +810,7 @@ namespace AspNetCore.Identity.LiteDB
          return Task.FromResult((IList<TUser>)_users.Find(u => u.Roles.Contains(roleName)).ToList());
       }
       #endregion
+
+      public IQueryable<TUser> Users => _users.FindAll().AsQueryable();
    }
 }

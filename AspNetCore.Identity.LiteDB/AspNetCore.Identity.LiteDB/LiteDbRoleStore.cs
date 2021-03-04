@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.LiteDB.Data;
@@ -12,8 +14,10 @@ using Microsoft.Win32.SafeHandles;
 namespace AspNetCore.Identity.LiteDB
 {
    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-   public class LiteDbRoleStore<TRole> : IQueryableRoleStore<TRole>, IRoleStore<TRole>
-      where TRole : IdentityRole, new()
+   public class LiteDbRoleStore<TRole> : 
+      IQueryableRoleStore<TRole>, 
+      IRoleStore<TRole>,
+      IRoleClaimStore<TRole> where TRole : IdentityRole, new()
    {
       private readonly ILiteCollection<CancellationToken> _cancellationTokens;
       private readonly ILiteCollection<TRole> _roles;
@@ -185,5 +189,42 @@ namespace AspNetCore.Identity.LiteDB
       }
 
       #endregion
+
+      public Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = new CancellationToken())
+      {
+         cancellationToken.ThrowIfCancellationRequested();
+         ThrowIfDisposed();
+
+         if (role == null) throw new ArgumentNullException(nameof(role));
+         return Task.FromResult<IList<Claim>>( role.Claims.Select(c => c.ToSecurityClaim()).ToList());
+      }
+
+      public Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = new CancellationToken())
+      {
+         cancellationToken.ThrowIfCancellationRequested();
+         ThrowIfDisposed();
+
+         if (role == null) throw new ArgumentNullException(nameof(role));
+
+         if (claim == null) throw new ArgumentNullException(nameof(claim));
+
+          role.AddClaim(claim);
+
+         return Task.CompletedTask;
+      }
+
+      public Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = new CancellationToken())
+      {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null) throw new ArgumentNullException(nameof(role));
+
+            if (claim == null) throw new ArgumentNullException(nameof(claim));
+
+            role.RemoveClaim(claim);
+
+            return Task.CompletedTask;
+      }
    }
 }
